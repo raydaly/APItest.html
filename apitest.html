@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>apitest</title>
+	<meta name="generator" content="TextMate http://macromates.com/">
+	<meta name="author" content="admrd">
+	<!-- Date: 2010-07-23 -->
+</head>
+<body>
+	<h1>API Tester</h1>
+	<p>This is a javascript tester of RESTful APIs. It will programatically and repetitively 
+		call an API producing a log of the response time. It can be run over an entire 
+		day or for just a few minutes.</p>
+	<p>This test shows the availability and reliability of an API over a period of time. 
+		This is not meant to be a stress test. Nor is it meant to abuse any API. So use 
+		cautiously and wisely.</p>
+		<table>
+			<tr><td>API URL: </td><td><input size="60" id="apiUrl" /></td></tr>
+			<tr><td>Data type: </td><td><input id="dataType" value="json" /> jsonp for twitter and others</td></tr>
+			<tr><td>Intervals: </td><td><input id="noIntervals" value=10 /></td></tr>
+			<tr><td>Delay (ms): </td><td><input id="delay" value=5000 /></td></tr>
+			<tr><td>Chart? </td><td><input type="checkbox" value=true id="isChart" /></td></tr>
+			<tr><td>Username: </td><td><input id="yourUsername" /></td></tr>
+			<tr><td>Password: </td><td><input id="yourPassword" /></td></tr>
+			<tr><td>&nbsp;</td><td><button id="startBut">Start Test</button></td></tr>
+		</table>
+		<p id="log"></p>
+		<p id="chart"></p>
+	
+<script type="text/javascript"
+		 src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+
+<script>	
+$(document).ready(function () {
+	//variables are noIntervals, delay
+	//apiTest.start(20,10000);
+	$("#startBut").click(apiTest.startup);
+	apiTest.init();
+});
+
+var apiTest ={
+	results: [],
+	returnObj: {},
+	init: function(){
+		//look in url for values http://papermashup.com/read-url-get-variables-withjavascript/
+		//?apiUrl=xxx&dataType=jsonp&intervals=10&delay=180
+		var x=apiTest.getUrlVars()['dataType'];
+		if (x){$("#dataType").val(x)}
+		var x=apiTest.getUrlVars()['apiUrl'];
+		if (x){$("#apiUrl").val(x)}
+		var x=apiTest.getUrlVars()['intervals'];
+		if (x){$("#intervals").val(x)}
+		var x=apiTest.getUrlVars()['delay'];
+		if (x){$("#delay").val(x)}
+	},
+	startup: function(){
+		apiTest.start($("#noIntervals").val(),$("#delay").val(),$("#apiUrl").val(),$("#yourUsername").val(),$("#yourPassword").val(),$("#dataType").val());
+		$("#log").html("");
+		$("#chart").html("");
+		
+	},
+	getUrlVars: function() {
+		// usage var apiTest.getUrlVars()["id"]
+		var vars = {};
+		var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+				vars[key] = value;
+			});
+		return vars;
+	},
+	start: function(noIntervals, delay, apiUrl, username, password,dataType){
+		//alert("@start="+noIntervals+"..."+delay)
+		var i = 1;
+		var id = setInterval(function(){
+			if (i == noIntervals) clearInterval(id);
+			$("#log").append(i.toString()+", " );
+			apiTest.oneTest(i,apiUrl,username,password,dataType);
+			i++;
+		},delay)
+	},
+	oneTest: function(count,apiUrl,yourUsername,yourPassword,dataType){
+		//var apiUrl="http://search.twitter.com/search.json?q="+term+"&callback=?";
+		//var apiUrl="https://ims.nea.org/ims/iautilities/getPersonalInformationDropDowns.action?sid=" + Math.random()
+		var x="?"
+		if (apiUrl.match(/\?/)){
+			x="&"
+		}
+		//apiUrl=apiUrl+x+"sid=" + Math.random() //solve IE cache issue
+		var startDate= new Date();
+		var startTime = startDate.getTime();
+		$.ajax({
+			type: 'GET',
+			//url: "http://search.twitter.com/search.json?q=jsconf&callback=?",  //apiUrl,
+			url: apiUrl,
+			username: yourUsername,
+			password: yourPassword,
+			dataType: dataType,
+			context: {"count": count, "startTime": startTime, "startDate": startDate},
+			success: function(data,textStatus,request){
+				apiTest.returnObj=data;
+				//alert("@success="+textStatus);
+			},
+			error: function(data,textStatus,errorThrown){
+				apiTest.errorThrown=errorThrown;
+				//alert("@error="+textStatus);
+			},
+			complete: function(request, textStatus){
+				//alert("complete="+textStatus);
+				var endDate= new Date();
+				var endTime = endDate.getTime();
+				var startTime = this.startTime
+				var dif = endTime-startTime;
+				var count=this.count;
+				var startDate=this.startDate;
+				apiTest.results[count]=[startDate.toUTCString(), textStatus, dif, startTime, endTime]
+				//alert("complete="+textStatus);
+				$("#log").append(apiTest.results[count] + "<br />");
+				if($('input[type=checkbox]').is(':checked')){
+					var line="=======================================================================================================================================================================================";
+					$("#chart").append(line.substring(0,(apiTest.results[count][2]+100)/100) + "<br />");
+				}
+			 }	
+		});			
+	}
+}
+
+</script>
+</body>
+</html>
