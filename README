@@ -1,0 +1,13 @@
+apitest.html
+
+This is a javascript tester of RESTful APIs. It will programatically and repetitively 
+call an API producing a log of the response time. It can be run over an entire 
+day or for just a few minutes.
+
+This test shows the availability and reliability of an API over a period of time. 
+This is not meant to be a stress test. Nor is it meant to abuse any API. So use 
+cautiously and wisely.
+
+A log is created on the HTML page in a comma delimited format that may be imported 
+into any charting program.
+
